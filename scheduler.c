@@ -218,8 +218,6 @@ void Run_a_clock_time(int iter){
 		for(i = 0; i < 1000000UL; i++);
 	}
 }
-
-
 int Cmp(const void *p1,const void *p2) { 
     Task *pf1 = (Task*) p1; 
     Task *pf2 = (Task*) p2;
