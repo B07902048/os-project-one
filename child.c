@@ -11,10 +11,10 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-void Set_priority(pid_t pid, int priority){
+void Set_priority(pid_t pid, int priority, int ID){
 	struct sched_param param;
 	param.sched_priority = priority;
-	fprintf(stderr, "[child] switch to parent (from %d)\n", getpid());
+	fprintf(stderr, "[child %d] switch to parent\n", ID + 1);
 	//fprintf(stderr, "[child] being set to %d (pid = %d)\n", priority, pid);
 	sched_setscheduler(pid, SCHED_FIFO, &param);
 	//fprintf(stderr, "[child] back to child (pid = %d)\n", getpid());
@@ -39,9 +39,9 @@ int main(int argc, char **argv){
 	int iter = atoi(argv[1]);
 	int ID = atoi(argv[2]);
 	int *t= Get_message(ID);
-	fprintf(stderr, "[child] pid = %d, first in, total iter = %d\n", getpid(), iter);
+	fprintf(stderr, "[child %d] first in, total iter = %d\n", ID + 1, iter);
 	//getnstimeofday();
-	Set_priority(getpid(), 1);
+	Set_priority(getpid(), 1, ID);
 	//sched_yield();
 	//fprintf(stderr, "[child] back to child...\n");
 	
@@ -49,16 +49,16 @@ int main(int argc, char **argv){
 		//Run_a_clock_time(*t);
 		iter -= *t;
 		//fprintf(stderr, "in cycle2\n");
-		fprintf(stderr, "[child] pid = %d, got message: %d, remain iter: %d\n", getpid(), *t, iter);
+		fprintf(stderr, "[child %d] got message: %d, remain iter: %d\n", ID+1, *t, iter);
 		
 		if(iter <= 0){
 			//getnstimeofday();
 			//printk();
-			fprintf(stderr, "[child] pid = %d finish!\n", getpid());
+			fprintf(stderr, "[child %d] finish!\n", ID+1);
 			exit(0);
 		}
 		
-		Set_priority(getpid(), 1);
+		Set_priority(getpid(), 1, ID);
 		//sched_yield();
 	
 	}
