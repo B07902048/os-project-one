@@ -56,7 +56,7 @@ void Start_new_task(){
 		sprintf(num, "%d", task[ready_num].exec_time);
 		sprintf(ID, "%d", ready_num);
 //		fprintf(stderr, "[scheduler] pass para %s to pid %d\n", num, getpid());
-		execl("./child", "child", num, ID, NULL);
+		execl("./child", "child", num, ID, task[i].name, NULL);
 //		fprintf(stderr, "exec child failed\n"); exit(-1);
 	}
 	else{
@@ -220,22 +220,6 @@ int main(){
 		wait(NULL);
 	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 void Set_cpu(){
 	CPU_ZERO(&set);

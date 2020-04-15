@@ -35,26 +35,28 @@ int* Get_message(int ID){
 	return ptr;
 }
 int main(int argc, char **argv){
-	assert(argc == 3);
+	assert(argc == 4);
 	int iter = atoi(argv[1]);
 	int ID = atoi(argv[2]);
 	int *t= Get_message(ID);
 	fprintf(stderr, "[child %d] first in, total iter = %d\n", ID + 1, iter);
-	//getnstimeofday();
+	long long T1 = syscall(334);
 	Set_priority(getpid(), 1, ID);
 	//sched_yield();
 	//fprintf(stderr, "[child] back to child...\n");
 	
 	while(iter > 0){
-		//Run_a_clock_time(*t);
+		Run_a_clock_time(*t);
 		iter -= *t;
 		//fprintf(stderr, "in cycle2\n");
 		fprintf(stderr, "[child %d] got message: %d, remain iter: %d\n", ID+1, *t, iter);
 		
 		if(iter <= 0){
-			//getnstimeofday();
-			//printk();
+			long long T2 = syscall(334);
+			syscall(335, (int)getpid(), time1, time2);
 			fprintf(stderr, "[child %d] finish!\n", ID+1);
+			printf("%s %d\n", argv[3], getpid());
+			fflush(stdout);
 			exit(0);
 		}
 		
