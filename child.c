@@ -35,17 +35,19 @@ int main(int argc, char **argv){
 	int iter = atoi(argv[1]);
 	int ID = atoi(argv[2]);
 	int *t= Get_message(ID);
-	//fprintf(stderr, "[child %d] first in, total iter = %d\n", ID + 1, iter);
-	long long T1 = syscall(334);
+	fprintf(stderr, "[child %d] first in, total iter = %d\n", ID + 1, iter);
 	Set_priority(getpid(), 1, ID);
+	unsigned long T1_sec = 0, T1_nsec = 0, T2_sec = 0, T2_nsec = 0;
+	syscall(334, &T1_sec, &T1_nsec);
+	
 	while(iter > 0){
 		Run_a_clock_time(*t);
 		iter -= *t;
 		//fprintf(stderr, "[child %d] got message: %d, remain iter: %d\n", ID+1, *t, iter);
 		if(iter <= 0){
-			long long T2 = syscall(334);
-			syscall(335, (int)getpid(), T2, T1);
-			//fprintf(stderr, "[child %d] finish!\n", ID+1);
+			syscall(334, &T2_sec, &T2_nsec);
+			syscall(335, (int)getpid(), T1_sec, T1_nsec, T2_sec, T2_nsec);
+			fprintf(stderr, "[child %d] finish!\n", ID+1);
 			printf("%s %d\n", argv[3], getpid());
 			fflush(stdout);
 			exit(0);
