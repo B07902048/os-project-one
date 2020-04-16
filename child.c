@@ -46,7 +46,7 @@ int main(int argc, char **argv){
 		//fprintf(stderr, "[child %d] got message: %d, remain iter: %d\n", ID+1, *t, iter);
 		if(iter <= 0){
 			syscall(334, &T2_sec, &T2_nsec);
-			syscall(335, (int)getpid(), T1_sec, T1_nsec, T2_sec, T2_nsec);
+			syscall(335, (int)getpid(), 1, 2, 3, 4);
 			fprintf(stderr, "[child %d] finish!\n", ID+1);
 			printf("%s %d\n", argv[3], getpid());
 			fflush(stdout);
