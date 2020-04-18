@@ -37,16 +37,16 @@ int main(int argc, char **argv){
 	int *t= Get_message(ID);
 	fprintf(stderr, "[child %d] first in, total iter = %d\n", ID + 1, iter);
 	Set_priority(getpid(), 1, ID);
-	unsigned long T1_sec = 0, T1_nsec = 0, T2_sec = 0, T2_nsec = 0;
-	syscall(334, &T1_sec, &T1_nsec);
+	unsigned long long T1, T2;
+	T1 = syscall(334);
 	
 	while(iter > 0){
 		Run_a_clock_time(*t);
 		iter -= *t;
 		//fprintf(stderr, "[child %d] got message: %d, remain iter: %d\n", ID+1, *t, iter);
 		if(iter <= 0){
-			syscall(334, &T2_sec, &T2_nsec);
-			syscall(335, (int)getpid(), 1, 2, 3, 4);
+			T2 = syscall(334);
+			syscall(333, (int)getpid(), T1, T2);
 			fprintf(stderr, "[child %d] finish!\n", ID+1);
 			printf("%s %d\n", argv[3], getpid());
 			fflush(stdout);

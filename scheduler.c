@@ -185,7 +185,7 @@ void Scheduler(){
 	else if(strcmp(policy, "PSJF") == 0) PSJF();
 }
 int main(){
-	fprintf(stderr, "start\n");
+	//fprintf(stderr, "start\n");
 	Set_cpu();
 	Set_priority(getpid(), 50, -1);
 	Read_input();
@@ -194,7 +194,7 @@ int main(){
 	for(int i = 0; i < N; i++){
 		wait(NULL);
 	}
-	fprintf(stderr, "end\n");
+	//fprintf(stderr, "end\n");
 }
 void Set_cpu(){
 	CPU_ZERO(&set);
