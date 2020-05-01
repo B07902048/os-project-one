@@ -11,7 +11,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include "scheduler.h"
-#define MAXN 100000
+#define MAXN 1000
 #define DEFAULT_CPU 0
 
 Task task[MAXN];
@@ -20,11 +20,31 @@ cpu_set_t set;
 int N, now_time, ready_num;
 int *shm_ptr;
 
+typedef struct{
+	int data[MAXN];
+	int start, end;
+}Queue;
+Queue ready_queue;
+void Push(int data){
+	ready_queue.data[ready_queue.end] = data;
+	ready_queue.end = (ready_queue.end + 1) % MAXN; 
+}
+
+bool Task_is_in_ready_queue(){
+	if(ready_queue.start != ready_queue.end) return true;
+	return false;
+}
+int Pop(){
+	if(!Task_is_in_ready_queue()) fprintf(stderr, "error in Pop queue\n");
+	int temp = ready_queue.data[ready_queue.start];
+	ready_queue.start = (ready_queue.start + 1) % MAXN;
+	return temp;
+}
+
 bool Is_terminated(){
-	for(int i = 0; i < N; i++){
-		if(task[i].exec_time > 0) return false;
-	}
-	return true;
+	if(!Task_is_in_ready_queue() && ready_num >= N)
+		return true;
+	return false;
 }
 void Set_priority(pid_t pid, int priority, int i){
 	struct sched_param param;
@@ -42,6 +62,8 @@ void Start_new_task(){
 	}
 	else{
 		Set_priority(task[ready_num].pid, 99, ready_num);
+		//Push into queue
+		Push(ready_num);
 		ready_num++;
 	}
 	return;
@@ -51,12 +73,7 @@ void Start_new_tasks(){
 		Start_new_task();
 	}
 }
-bool Task_is_in_ready_queue(){
-	for(int i = 0; i < ready_num; i++){
-		if(task[i].exec_time > 0) return true;
-	}
-	return false;
-}
+
 int Time_remain_create_task(){
 	if(ready_num < N){
 		return task[ready_num].ready_time - now_time;
@@ -70,13 +87,13 @@ void Assign_time_to_child(int i, int time){
 	memcpy(shm_ptr, &time, sizeof(int));
 	Set_priority(task[i].pid, 99, i);
 }
-void Pick_next_job(int *i){
-	do{
-		*i = (*i + 1) % ready_num;
-	}while(task[*i].exec_time <= 0);
+//
+//not change yet
+int Pick_next_job(){
+	return Pop();
 }
+//
 void FIFO(){
-	int i = -1;
 	while(1){
 		//fprintf(stderr, "[scheduler] now_time = %d\n", now_time);
 		if(ready_num < N && !Task_is_in_ready_queue()){
@@ -85,7 +102,8 @@ void FIFO(){
 			Start_new_tasks();
 			continue;
 		}
-		Pick_next_job(&i);
+		int i = Pick_next_job();
+		//Pick_next_job(&i);
 		while(Time_remain_create_task() < task[i].exec_time){	
 			Assign_time_to_child(i, task[ready_num].ready_time - now_time);
 			Start_new_tasks();	
@@ -96,7 +114,6 @@ void FIFO(){
 	}
 }
 void RR(){
-	int i = -1;
 	while(1){
 		//fprintf(stderr, "[scheduler] now_time = %d\n", now_time);
 		if(ready_num < N && !Task_is_in_ready_queue()){
@@ -106,7 +123,7 @@ void RR(){
 			continue;
 		}
 		int round_remain = 500;
-		Pick_next_job(&i);
+		int i = Pick_next_job();
 		if(task[i].exec_time > round_remain){
 			while(Time_remain_create_task() < round_remain){
 				round_remain -= task[ready_num].ready_time - now_time;
@@ -115,6 +132,8 @@ void RR(){
 			}
 			Assign_time_to_child(i, round_remain);
 			Start_new_tasks();
+			//Add
+			Push(i);
 		}
 		else{
 			while(Time_remain_create_task() < task[i].exec_time){	
@@ -127,17 +146,21 @@ void RR(){
 		if(Is_terminated()) break;
 	}
 }
-void Pick_shortest_job(int *i){
+int Pick_shortest_job(){
 	int shortest = 10000000;
-	for(int j = 0; j < ready_num; j++){
-		if(task[j].exec_time > 0 && task[j].exec_time < shortest){
-			*i = j;
-			shortest = task[j].exec_time;
+	int shortest_idx = -1;
+	for(int j = ready_queue.start; j != ready_queue.end; j = (j + 1) % MAXN){
+		if(task[ready_queue.data[j]].exec_time < shortest){
+			shortest_idx = j;
+			shortest = task[ready_queue.data[j]].exec_time;
 		}
 	}
+	int temp = ready_queue.data[shortest_idx];
+	ready_queue.data[shortest_idx] = ready_queue.data[ready_queue.start];
+	ready_queue.data[ready_queue.start] = temp;
+	return Pop();
 }
 void SJF(){
-	int i = -1;
 	while(1){
 		//fprintf(stderr, "[scheduler] now_time = %d\n", now_time);
 		if(ready_num < N && !Task_is_in_ready_queue()){
@@ -146,10 +169,10 @@ void SJF(){
 			Start_new_tasks();
 			continue;
 		}
-		Pick_shortest_job(&i);
-		while(Time_remain_create_task() < task[i].exec_time){	
+		int i = Pick_shortest_job();
+		while(Time_remain_create_task() < task[i].exec_time){
 			Assign_time_to_child(i, task[ready_num].ready_time - now_time);
-			Start_new_tasks();	
+			Start_new_tasks();
 		}
 		Assign_time_to_child(i, task[i].exec_time);
 		Start_new_tasks();
@@ -157,7 +180,6 @@ void SJF(){
 	}
 }
 void PSJF(){
-	int i = -1;
 	while(1){
 		//fprintf(stderr, "[scheduler] now_time = %d\n", now_time);
 		if(ready_num < N && !Task_is_in_ready_queue()){
@@ -166,10 +188,11 @@ void PSJF(){
 			Start_new_tasks();
 			continue;
 		}
-		Pick_shortest_job(&i);
+		int i = Pick_shortest_job();
 		if(Time_remain_create_task() < task[i].exec_time){	
 			Assign_time_to_child(i, task[ready_num].ready_time - now_time);
-			Start_new_tasks();	
+			Start_new_tasks();
+			Push(i);
 		}
 		else{
 			Assign_time_to_child(i, task[i].exec_time);
